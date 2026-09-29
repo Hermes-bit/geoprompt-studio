@@ -1050,7 +1050,7 @@ function marketDash(){
 function heatmap(rs){
   let h=`<div class="heat" role="table" aria-label="Probabilité en colonnes, impact en lignes"><div class="hax"></div>${[1,2,3,4,5].map(p=>`<div class="hax">P${p}</div>`).join("")}`;
   for(let i=5;i>=1;i--){h+=`<div class="hax">I${i}</div>`;for(let p=1;p<=5;p++){const cell=rs.filter(r=>r.probabilite===p&&r.impact===i);const [c]=rlevel(p*i);h+=`<div class="hc ${c}" title="${cell.length?esc(cell.map(r=>r.titre).join(" · ")):"Aucun risque"} (score ${p*i})">${cell.length||""}</div>`}}
-  return h+`</div><div class="legend" style="margin-top:8px"><span><i class="lvl-sw good"></i>Faible (1–4)</span><span><i class="lvl-sw warn"></i>Modéré (5–9)</span><span><i class="lvl-sw serious"></i>Élevé (10–14)</span><span><i class="lvl-sw crit"></i>Critique (15–25)</span></div><p class="status">P = probabilité, I = impact, de 1 à 5. Survolez une case pour voir les risques.</p>`;
+  return h+`</div><div class="legend" style="margin-top:8px"><span><i class="lvl-sw good"></i>Faible (1-4)</span><span><i class="lvl-sw warn"></i>Modéré (5-9)</span><span><i class="lvl-sw serious"></i>Élevé (10-14)</span><span><i class="lvl-sw crit"></i>Critique (15-25)</span></div><p class="status">P = probabilité, I = impact, de 1 à 5. Survolez une case pour voir les risques.</p>`;
 }
 function besoinsView(){
   const bs=S.data.besoins.filter(paysOk).sort((a,b)=>(a.priorite||3)-(b.priorite||3)||(a.pays||"").localeCompare(b.pays||""));
@@ -1231,17 +1231,17 @@ function monthView(a,t0){
   const sel=evsOn(S.aday);
   return `<div class="month card"><div class="mhead">${["lun.","mar.","mer.","jeu.","ven.","sam.","dim."].map(j=>`<span>${j}</span>`).join("")}</div><div class="mgrid">${cells}</div></div>
    <section class="card"><div class="sechead"><h2 style="text-transform:capitalize">${esc(flong(S.aday))}</h2><button class="btn small" data-new-event-on="${S.aday}">+ Ajouter ce jour</button></div>
-    ${sel.length?`<div class="list">${sel.map(e=>`<div class="li" data-edit-event="${esc(e.id)}" style="cursor:pointer"><span class="when">${esc(e.debut||"")}</span><div class="body"><span class="evline" style="${evStyle(e)}"><b>${esc(e.titre)}</b>${esc(e.debut||"")}–${esc(e.fin||"")}${e.lieu?" · "+esc(e.lieu):""}</span></div></div>`).join("")}</div>`:`<p class="status">Rien ce jour-là.</p>`}</section>`;
+    ${sel.length?`<div class="list">${sel.map(e=>`<div class="li" data-edit-event="${esc(e.id)}" style="cursor:pointer"><span class="when">${esc(e.debut||"")}</span><div class="body"><span class="evline" style="${evStyle(e)}"><b>${esc(e.titre)}</b>${esc(e.debut||"")}-${esc(e.fin||"")}${e.lieu?" · "+esc(e.lieu):""}</span></div></div>`).join("")}</div>`:`<p class="status">Rien ce jour-là.</p>`}</section>`;
 }
 function weekView(ws,t0){
   const days=[...Array(7)].map((_,i)=>addDays(ws,i));const H0=7,H1=21;
   const toMin=s=>{const [h,m]=String(s||"00:00").split(":").map(Number);return h*60+(m||0)};
   const narrow=window.matchMedia("(max-width:700px)").matches;
-  if(narrow)return `<div class="calist">${days.map(d=>{const arr=evsOn(d);return `<div class="dayh ${d===t0?"today":""}">${fdate(d)}</div>${arr.length?arr.map(e=>`<div class="li" data-edit-event="${esc(e.id)}" style="cursor:pointer"><span class="when">${esc(e.debut||"")}–${esc(e.fin||"")}</span><div class="body"><span class="evline" style="${evStyle(e)}"><b>${esc(e.titre)}</b>${esc(e.lieu||"")}</span></div></div>`).join(""):`<p class="status" style="padding:6px 0">-</p>`}`}).join("")}</div>`;
+  if(narrow)return `<div class="calist">${days.map(d=>{const arr=evsOn(d);return `<div class="dayh ${d===t0?"today":""}">${fdate(d)}</div>${arr.length?arr.map(e=>`<div class="li" data-edit-event="${esc(e.id)}" style="cursor:pointer"><span class="when">${esc(e.debut||"")}-${esc(e.fin||"")}</span><div class="body"><span class="evline" style="${evStyle(e)}"><b>${esc(e.titre)}</b>${esc(e.lieu||"")}</span></div></div>`).join(""):`<p class="status" style="padding:6px 0">-</p>`}`}).join("")}</div>`;
   return `<div class="cal"><div class="calgrid">
    <div class="calhead"></div>${days.map(d=>{const dd=pd(d);return `<div class="calhead ${d===t0?"today":""}">${JOURS[dd.getDay()]}<b>${dd.getDate()}</b></div>`}).join("")}
    <div class="hours">${[...Array(H1-H0)].map((_,i)=>`<div>${H0+i}:00</div>`).join("")}</div>
-   ${days.map(d=>`<div class="daycol ${d===t0?"today":""}" style="height:${(H1-H0)*48}px" data-slot-day="${d}">${evsOn(d).map(e=>{const s=Math.max(toMin(e.debut),H0*60),en=Math.min(Math.max(toMin(e.fin||e.debut)||s+60,s+30),H1*60);return `<div class="ev" data-edit-event="${esc(e.id)}" style="${evStyle(e)};top:${(s-H0*60)/60*48}px;height:${Math.max(22,(en-s)/60*48-2)}px"><b>${esc(e.titre)}</b>${esc(e.debut||"")}–${esc(e.fin||"")}${e.lieu?" · "+esc(e.lieu):""}</div>`}).join("")}</div>`).join("")}
+   ${days.map(d=>`<div class="daycol ${d===t0?"today":""}" style="height:${(H1-H0)*48}px" data-slot-day="${d}">${evsOn(d).map(e=>{const s=Math.max(toMin(e.debut),H0*60),en=Math.min(Math.max(toMin(e.fin||e.debut)||s+60,s+30),H1*60);return `<div class="ev" data-edit-event="${esc(e.id)}" style="${evStyle(e)};top:${(s-H0*60)/60*48}px;height:${Math.max(22,(en-s)/60*48-2)}px"><b>${esc(e.titre)}</b>${esc(e.debut||"")}-${esc(e.fin||"")}${e.lieu?" · "+esc(e.lieu):""}</div>`}).join("")}</div>`).join("")}
   </div></div><p class="status">Touchez une plage vide pour créer un événement à cette heure.</p>`;
 }
 function colorsModal(){const cm=colMeaning();

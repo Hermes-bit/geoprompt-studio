@@ -1505,7 +1505,10 @@ async function genBP(){
     await put("bp",p.id,{markdown:r.text,date:new Date().toISOString(),projetTitre:p.titre});toast("Business plan enregistré");
   }catch(e){out.innerHTML=e.text?md(e.text):`<p class="muted">${e.code==="not_granted"?"La rédaction automatique a été refusée. Utilisez le canevas.":"Rédaction interrompue. Réessayez dans un instant."}</p>`}finally{btn.disabled=false}
 }
-async function dl(name,data){const u=URL.createObjectURL(new Blob([data],{type:name.endsWith(".html")?"text/html":"text/markdown"}));const a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+async function dl(name,data){
+  const type=data instanceof Blob?data.type:name.endsWith(".html")?"text/html":name.endsWith(".pdf")?"application/pdf":name.endsWith(".ics")?"text/calendar":name.endsWith(".txt")?"text/plain":"text/markdown";
+  const blob=data instanceof Blob?data:new Blob([data],{type});
+  const u=URL.createObjectURL(blob);const a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
 
 /* ---------- Événements ---------- */
 document.addEventListener("click",async e=>{

@@ -80,6 +80,9 @@ svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .page{max-width:1120px;margin:0 auto;padding-inline:32px;padding-block:28px 64px;display:flex;flex-direction:column;gap:24px}
 .pagehead{display:flex;flex-direction:column;gap:14px}
 .pagehead .top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.account-btn{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);padding:0;overflow:hidden;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer}
+.account-btn img{width:100%;height:100%;object-fit:cover}
+.account-btn[aria-current="true"]{outline:2px solid var(--primary);outline-offset:2px}
 .pagehead h1{font-size:1.9rem;font-weight:800;letter-spacing:-.025em}
 .pagehead .date{color:var(--muted);font-size:.9rem;font-weight:500;text-transform:capitalize}
 .tabbar{display:none}
@@ -769,8 +772,9 @@ function handleHashAdd(){
 function renderTabs(){
   const cur=secOf(S.tab).k;
   const item=(s,cls)=>`<button type="button" class="${cls}" data-tab="${s.views[0][0]}" ${cur===s.k?'aria-current="page"':""}>${icon(s.ic)}<span>${s.l}</span></button>`;
-  $("#side-nav").innerHTML=SECTIONS.map(s=>item(s,"nav-item")).join("");
-  $("#tabbar").innerHTML=SECTIONS.map(s=>item(s,"")).join("");
+  const navSections=SECTIONS.filter(s=>s.k!=="compte");
+  $("#side-nav").innerHTML=navSections.map(s=>item(s,"nav-item")).join("");
+  $("#tabbar").innerHTML=navSections.map(s=>item(s,"")).join("");
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b){e.preventDefault();go(b.dataset.tab)}});
 const ALIAS={accueil:"aujourdhui"};
@@ -781,8 +785,12 @@ function go(t){t=ALIAS[t]||t;if(!TABS.some(x=>x[0]===t))t="aujourdhui";S.tab=t;t
 function renderHead(){
   const s=secOf(S.tab);
   const h=new Date().getHours();
-  const title=s.k==="accueil"?(h<5||h>=18?"Bonsoir":"Bonjour"):s.l;
-  $("#pagehead").innerHTML=`<div class="top"><div><h1>${title}</h1><span class="date">${flong(today())}</span></div></div>
+  const prenom=(profil().nom||"").split(" ")[0];
+  const title=s.k==="accueil"?(h<5||h>=18?"Bonsoir":"Bonjour")+(prenom?", "+prenom:""):s.l;
+  const md=(USER&&USER.user_metadata)||{};const avatar=md.avatar_url||md.picture;
+  const initiale=esc((prenom||S.userEmail||"?").charAt(0).toUpperCase());
+  $("#pagehead").innerHTML=`<div class="top"><div><h1>${title}</h1><span class="date">${flong(today())}</span></div>
+   <button type="button" class="account-btn" data-tab="profil" aria-label="Mon compte" title="Mon compte" aria-current="${S.tab==="profil"}">${avatar?`<img src="${esc(avatar)}" alt="">`:`<span>${initiale}</span>`}</button></div>
    ${s.views.length>1?`<div class="segs" role="tablist">${s.views.map(([k,l])=>`<button type="button" role="tab" data-tab="${k}" aria-selected="${S.tab===k}">${l}</button>`).join("")}</div>`:""}`;
 }
 function render(){
@@ -2873,12 +2881,37 @@ VIEWS.profil=function(){
       </select>
     </div>
   </section>
+  ${provider!=="google"?`<section class="card">
+    <div class="sechead"><h2>Sécurité</h2></div>
+    <details class="params"><summary>Changer mon mot de passe</summary>
+      <form class="form" id="pw-form" style="margin-top:10px">
+        <label class="full">Nouveau mot de passe<input id="pw-new" type="password" autocomplete="new-password"></label>
+        <label class="full">Confirmer le mot de passe<input id="pw-new2" type="password" autocomplete="new-password"></label>
+        <p class="status full">8 caractères minimum, dont au moins un chiffre.</p>
+        <div class="full row"><button class="btn primary" type="submit">Enregistrer</button></div>
+        <p class="status full" id="pw-msg" role="status"></p>
+      </form>
+    </details>
+  </section>`:""}
   <section class="card">
     <div class="sechead"><h2>Compte</h2></div>
     <p class="muted">Vos données restent dans votre espace personnel, protégé par votre connexion.</p>
     <div class="row" style="margin-top:10px"><button class="btn ghost" type="button" data-logout>Se déconnecter</button></div>
+  </section>
+  <section class="card">
+    <div class="sechead"><h2>À propos</h2></div>
+    <p class="muted">GéoPrompt Studio — l'atelier du géomaticien.</p>
+    <p class="status">Code source : <a href="https://github.com/Hermes-bit/geoprompt-studio" target="_blank" rel="noopener">github.com/Hermes-bit/geoprompt-studio</a></p>
   </section>`;
 };
+document.addEventListener("submit",async e=>{if(e.target.id!=="pw-form")return;e.preventDefault();
+  const v={pass:document.getElementById("pw-new").value,pass2:document.getElementById("pw-new2").value};const err=checkNew(v,false);
+  const msg=document.getElementById("pw-msg");
+  if(err){msg.textContent=err;msg.style.color="#B3261E";return}
+  msg.textContent="Modification…";msg.style.color="";
+  const {error}=await SB.auth.updateUser({password:v.pass});
+  if(error){msg.textContent="Modification impossible : "+fmtErr(error);msg.style.color="#B3261E";return}
+  document.getElementById("pw-form").reset();msg.textContent="";toast("Mot de passe modifié")});
 
 /* ---------- Empreinte et signature ---------- */
 function sortKeys(x){if(Array.isArray(x))return x.map(sortKeys);if(x&&typeof x==="object")return Object.keys(x).sort().reduce((o,k)=>(o[k]=sortKeys(x[k]),o),{});return x}

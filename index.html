@@ -604,7 +604,7 @@ const pd=s=>{const [y,m,d]=String(s).split("-").map(Number);return new Date(y,(m
 const addDays=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return iso(d)};
 const diffDays=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
 const JOURS=["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
-const fdate=s=>{if(!s)return"—";const d=pd(s);return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})};
+const fdate=s=>{if(!s)return"-";const d=pd(s);return d.toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})};
 const flong=s=>pd(s).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 const hm=min=>{min=Math.round(min||0);const h=Math.floor(min/60),m=min%60;return h?`${h} h ${String(m).padStart(2,"0")}`:`${m} min`};
 const uid=p=>p+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1008,13 +1008,13 @@ function genBox(kind){
 }
 
 /* ---------- Marchés ---------- */
-const eur=n=>n?Math.round(n).toLocaleString("fr-FR")+" €":"—";
+const eur=n=>n?Math.round(n).toLocaleString("fr-FR")+" €":"-";
 const rscore=r=>(r.probabilite||0)*(r.impact||0);
 const rlevel=s=>s>=15?["crit","Critique"]:s>=10?["serious","Élevé"]:s>=5?["warn","Modéré"]:["good","Faible"];
 function paysOk(x){const p=S.f.mPays;return !p||x.pays===p||x.pays==="Les deux"}
 function hbars(items,unit){const max=Math.max(1,...items.map(i=>i.value));
   return items.length?`<div class="hbars">${items.map(i=>`<div class="hb" title="${esc(i.label)} : ${i.value}${unit||""}"><span class="hbl">${esc(i.label)}</span><span class="hbt"><i style="width:${Math.max(2,i.value/max*100)}%"></i></span><span class="hbv">${i.value}${unit||""}</span></div>`).join("")}</div>`:`<p class="status">Aucune donnée.</p>`}
-function countBy(arr,key,labels){const m={};arr.forEach(x=>{const k=x[key]||"—";m[k]=(m[k]||0)+1});return Object.entries(m).map(([k,v])=>({label:labels&&labels[k]||k,value:v})).sort((a,b)=>b.value-a.value)}
+function countBy(arr,key,labels){const m={};arr.forEach(x=>{const k=x[key]||"-";m[k]=(m[k]||0)+1});return Object.entries(m).map(([k,v])=>({label:labels&&labels[k]||k,value:v})).sort((a,b)=>b.value-a.value)}
 function marketDash(){
   const ind=(S.data.marche.find(m=>m.id==="indicateurs")||{}).items||[];
   const shown=ind.filter(i=>!S.f.mPays||i.zone===S.f.mPays||i.zone==="Monde");
@@ -1044,7 +1044,7 @@ function marketDash(){
   </div>
   <div class="cols2">
    <section class="card"><h3>Carte des risques</h3>${heatmap(rs)}</section>
-   <section class="card"><h3>Risques à surveiller</h3>${top.length?`<div class="list">${top.map(r=>{const [c,l]=rlevel(rscore(r));return `<div class="li" style="cursor:pointer" data-edit-risque="${esc(r.id)}"><span class="lvl ${c}">${l} · ${rscore(r)}</span><div class="body"><b>${esc(r.titre)}</b><div class="muted" style="font-size:.82rem">${esc(r.pays)} · ${esc(RCAT[r.categorie]||"")}</div><div style="font-size:.84rem">Parade : ${esc(r.parade||"—")}</div></div></div>`}).join("")}</div>`:`<div class="empty">Aucun risque saisi.</div>`}</section>
+   <section class="card"><h3>Risques à surveiller</h3>${top.length?`<div class="list">${top.map(r=>{const [c,l]=rlevel(rscore(r));return `<div class="li" style="cursor:pointer" data-edit-risque="${esc(r.id)}"><span class="lvl ${c}">${l} · ${rscore(r)}</span><div class="body"><b>${esc(r.titre)}</b><div class="muted" style="font-size:.82rem">${esc(r.pays)} · ${esc(RCAT[r.categorie]||"")}</div><div style="font-size:.84rem">Parade : ${esc(r.parade||"-")}</div></div></div>`}).join("")}</div>`:`<div class="empty">Aucun risque saisi.</div>`}</section>
   </div>`;
 }
 function heatmap(rs){
@@ -1056,7 +1056,7 @@ function besoinsView(){
   const bs=S.data.besoins.filter(paysOk).sort((a,b)=>(a.priorite||3)-(b.priorite||3)||(a.pays||"").localeCompare(b.pays||""));
   return `<section><div class="chips">${[["","France et Burkina Faso"],["France","France"],["Burkina Faso","Burkina Faso"]].map(([k,l])=>`<button class="chip" type="button" data-mpays="${k}" aria-pressed="${(S.f.mPays||"")===k}">${l}</button>`).join("")}</div>
    <div class="tablewrap"><table class="data"><thead><tr><th>Priorité</th><th>Besoin</th><th>Organisation</th><th>Secteur</th><th>Échéance</th><th class="n">Budget</th><th>Statut</th></tr></thead><tbody>
-   ${bs.map(b=>`<tr style="cursor:pointer" data-edit-besoin="${esc(b.id)}"><td><span class="lvl ${b.priorite===1?"crit":b.priorite===2?"warn":"good"}">${b.priorite===1?"Haute":b.priorite===2?"Moyenne":"Basse"}</span></td><td><b>${esc(b.titre)}</b><div class="muted" style="font-size:.8rem;max-width:380px">${esc(b.description||"")}</div>${b.source?`<a class="mono muted" style="font-size:.7rem" href="${esc(b.source)}" target="_blank" rel="noopener">source</a>`:""}</td><td>${esc(b.organisation||"")}<div><span class="tag ${b.pays==="Burkina Faso"?"bf":""}">${esc(b.pays)}</span> <span class="tag ${b.type==="public"?"pub":"priv"}">${b.type==="public"?"Public":"Privé"}</span></div></td><td>${esc(b.secteur||"")}</td><td class="mono">${esc(b.echeance||"—")}</td><td class="n">${eur(Number(b.budgetEstime))}</td><td><span class="pill ${b.statut==="gagne"?"termine":b.statut==="perdu"?"backlog":b.statut==="propose"?"encours":"afaire"}">${BSTAT[b.statut||"identifie"]}</span></td></tr>`).join("")}
+   ${bs.map(b=>`<tr style="cursor:pointer" data-edit-besoin="${esc(b.id)}"><td><span class="lvl ${b.priorite===1?"crit":b.priorite===2?"warn":"good"}">${b.priorite===1?"Haute":b.priorite===2?"Moyenne":"Basse"}</span></td><td><b>${esc(b.titre)}</b><div class="muted" style="font-size:.8rem;max-width:380px">${esc(b.description||"")}</div>${b.source?`<a class="mono muted" style="font-size:.7rem" href="${esc(b.source)}" target="_blank" rel="noopener">source</a>`:""}</td><td>${esc(b.organisation||"")}<div><span class="tag ${b.pays==="Burkina Faso"?"bf":""}">${esc(b.pays)}</span> <span class="tag ${b.type==="public"?"pub":"priv"}">${b.type==="public"?"Public":"Privé"}</span></div></td><td>${esc(b.secteur||"")}</td><td class="mono">${esc(b.echeance||"-")}</td><td class="n">${eur(Number(b.budgetEstime))}</td><td><span class="pill ${b.statut==="gagne"?"termine":b.statut==="perdu"?"backlog":b.statut==="propose"?"encours":"afaire"}">${BSTAT[b.statut||"identifie"]}</span></td></tr>`).join("")}
    </tbody></table></div>${bs.length?"":`<div class="empty">Aucun besoin recensé.</div>`}</section>
    <section class="card" style="background:var(--sunk)"><div class="sechead"><h3>Grille d'entretien pour recueillir un besoin</h3><button class="btn small" data-copy-guide>Copier la grille</button></div><pre class="prompt">${esc(GUIDE)}</pre></section>`;
 }
@@ -1128,7 +1128,7 @@ function projectView(p){
     <div class="kpi"><span class="eyebrow">Durée</span><b>${st.dur} j</b><span class="status">${p.debut?fdate(p.debut)+" → "+(p.finReelle?fdate(p.finReelle):"aujourd'hui"):"non démarré"}</span></div>
     <div class="kpi"><span class="eyebrow">Temps passé</span><b>${hm(st.tot)}</b><span class="status">estimé ${hm(st.est)}</span></div>
     <div class="kpi"><span class="eyebrow">Avancement</span><b>${st.ts.length?Math.round(st.done/st.ts.length*100):0} %</b><span class="status">${st.done}/${st.ts.length} tâches terminées</span></div>
-    <div class="kpi"><span class="eyebrow">Sprint</span><b>${currentSprint(p)||"—"}</b><span class="status">sprints de ${p.sprintJours||14} jours</span></div>
+    <div class="kpi"><span class="eyebrow">Sprint</span><b>${currentSprint(p)||"-"}</b><span class="status">sprints de ${p.sprintJours||14} jours</span></div>
    </div>
    <div class="subtabs" role="tablist">${[["board","Tableau Scrum"],["gantt","Diagramme de Gantt"],["temps","Temps passé"]].map(([k,l])=>`<button type="button" role="tab" data-psub="${k}" aria-selected="${S.psub===k}">${l}</button>`).join("")}</div>
    ${S.psub==="gantt"?gantt(p,st.ts):S.psub==="temps"?timeReport(p,st):board(st.ts)}
@@ -1139,7 +1139,7 @@ function board(ts){
   return `<div class="board">${Object.entries(STAT).map(([k,l])=>{const arr=ts.filter(t=>(t.statut||"backlog")===k).sort((a,b)=>(a.sprint||0)-(b.sprint||0)||(a.ordre||0)-(b.ordre||0));
    return `<div class="colk"><h3><span>${l}</span><span class="muted mono">${arr.length}</span></h3>${arr.map(t=>`<div class="tcard ${t.running?"run":""}">
     <b>${esc(t.titre)}</b>
-    <div class="meta"><span>Sprint ${t.sprint||"—"}</span><span>${hm(t.tempsMin)} / ${t.estimationH||0} h</span>${t.debut?`<span>${fdate(t.debut)}→${fdate(t.fin)}</span>`:""}</div>
+    <div class="meta"><span>Sprint ${t.sprint||"-"}</span><span>${hm(t.tempsMin)} / ${t.estimationH||0} h</span>${t.debut?`<span>${fdate(t.debut)}→${fdate(t.fin)}</span>`:""}</div>
     ${t.running?`<span class="mono" style="color:var(--good)">● <span class="timer" data-since="${esc(t.running)}"></span></span>`:""}
     <div class="row">
      ${t.running?`<button class="btn small" data-stop="${esc(t.id)}">Arrêter le chrono</button>`:k!=="termine"?`<button class="btn small" data-startt="${esc(t.id)}">▶ Chrono</button>`:""}
@@ -1163,10 +1163,10 @@ function timeReport(p,st){
   const bySprint={};st.ts.forEach(t=>{const k=t.sprint||0;bySprint[k]=(bySprint[k]||0)+(t.tempsMin||0)});
   const max=Math.max(1,...rows.map(t=>Math.max(t.tempsMin||0,(t.estimationH||0)*60)));
   return `<div class="tablewrap"><table class="data"><thead><tr><th>Tâche</th><th>Statut</th><th class="n">Estimé</th><th class="n">Réel</th><th class="n">Écart</th><th>Réel / estimé</th><th class="n">Séances</th></tr></thead><tbody>
-  ${rows.map(t=>{const e=(t.estimationH||0)*60,r=t.tempsMin||0,over=e&&r>e;return `<tr><td>${esc(t.titre)}</td><td><span class="pill ${t.statut||"backlog"}">${STAT[t.statut||"backlog"]}</span></td><td class="n">${hm(e)}</td><td class="n">${hm(r)}</td><td class="n" style="color:var(${over?"--crit":"--good"})">${e?(r>e?"+":"−")+hm(Math.abs(r-e)):"—"}</td><td><div class="bar-h"><i class="${over?"over":""}" style="width:${Math.min(100,r/max*100)}%"></i></div></td><td class="n">${(t.sessions||[]).length}</td></tr>`}).join("")}
-  <tr><td><b>Total projet</b></td><td></td><td class="n"><b>${hm(st.est)}</b></td><td class="n"><b>${hm(st.tot)}</b></td><td class="n">${st.est?(st.tot>st.est?"+":"−")+hm(Math.abs(st.tot-st.est)):"—"}</td><td></td><td></td></tr>
+  ${rows.map(t=>{const e=(t.estimationH||0)*60,r=t.tempsMin||0,over=e&&r>e;return `<tr><td>${esc(t.titre)}</td><td><span class="pill ${t.statut||"backlog"}">${STAT[t.statut||"backlog"]}</span></td><td class="n">${hm(e)}</td><td class="n">${hm(r)}</td><td class="n" style="color:var(${over?"--crit":"--good"})">${e?(r>e?"+":"−")+hm(Math.abs(r-e)):"-"}</td><td><div class="bar-h"><i class="${over?"over":""}" style="width:${Math.min(100,r/max*100)}%"></i></div></td><td class="n">${(t.sessions||[]).length}</td></tr>`}).join("")}
+  <tr><td><b>Total projet</b></td><td></td><td class="n"><b>${hm(st.est)}</b></td><td class="n"><b>${hm(st.tot)}</b></td><td class="n">${st.est?(st.tot>st.est?"+":"−")+hm(Math.abs(st.tot-st.est)):"-"}</td><td></td><td></td></tr>
   </tbody></table></div>
-  <div class="row">${Object.entries(bySprint).sort((a,b)=>a[0]-b[0]).map(([k,v])=>`<span class="tag">Sprint ${k==="0"?"—":k} : ${hm(v)}</span>`).join("")}</div>
+  <div class="row">${Object.entries(bySprint).sort((a,b)=>a[0]-b[0]).map(([k,v])=>`<span class="tag">Sprint ${k==="0"?"-":k} : ${hm(v)}</span>`).join("")}</div>
   <p class="status">Durée calendaire : ${st.dur} jours${p.finReelle?" (projet clôturé)":""}. Le temps réel est mesuré par le chrono de chaque tâche ou saisi à la main dans « Modifier ».</p>`;
 }
 let timerInt=null;
@@ -1237,7 +1237,7 @@ function weekView(ws,t0){
   const days=[...Array(7)].map((_,i)=>addDays(ws,i));const H0=7,H1=21;
   const toMin=s=>{const [h,m]=String(s||"00:00").split(":").map(Number);return h*60+(m||0)};
   const narrow=window.matchMedia("(max-width:700px)").matches;
-  if(narrow)return `<div class="calist">${days.map(d=>{const arr=evsOn(d);return `<div class="dayh ${d===t0?"today":""}">${fdate(d)}</div>${arr.length?arr.map(e=>`<div class="li" data-edit-event="${esc(e.id)}" style="cursor:pointer"><span class="when">${esc(e.debut||"")}–${esc(e.fin||"")}</span><div class="body"><span class="evline" style="${evStyle(e)}"><b>${esc(e.titre)}</b>${esc(e.lieu||"")}</span></div></div>`).join(""):`<p class="status" style="padding:6px 0">—</p>`}`}).join("")}</div>`;
+  if(narrow)return `<div class="calist">${days.map(d=>{const arr=evsOn(d);return `<div class="dayh ${d===t0?"today":""}">${fdate(d)}</div>${arr.length?arr.map(e=>`<div class="li" data-edit-event="${esc(e.id)}" style="cursor:pointer"><span class="when">${esc(e.debut||"")}–${esc(e.fin||"")}</span><div class="body"><span class="evline" style="${evStyle(e)}"><b>${esc(e.titre)}</b>${esc(e.lieu||"")}</span></div></div>`).join(""):`<p class="status" style="padding:6px 0">-</p>`}`}).join("")}</div>`;
   return `<div class="cal"><div class="calgrid">
    <div class="calhead"></div>${days.map(d=>{const dd=pd(d);return `<div class="calhead ${d===t0?"today":""}">${JOURS[dd.getDay()]}<b>${dd.getDate()}</b></div>`}).join("")}
    <div class="hours">${[...Array(H1-H0)].map((_,i)=>`<div>${H0+i}:00</div>`).join("")}</div>
@@ -1383,7 +1383,7 @@ function mailModal(pr,m){
     try{const r=await S.sample.json(`Tu es un consultant en géomatique qui prospecte. Rédige en français un mail de prospection ${val("ml-ton").toLowerCase()} (150 mots maximum, vouvoiement, sans formule creuse, une seule proposition d'action claire : un échange de 20 minutes ou une démonstration).
 Destinataire : ${pr.nom} (${pr.pays}, ${pr.type==="public"?"organisme public":"entreprise privée"}, secteur : ${pr.secteur||"?"}). Contact : ${pr.contact||"non précisé"}.
 Besoin probable : ${pr.besoin||"non précisé"}.
-${selRefs().length?"Cite brièvement ces références : "+selRefs().map(refText).join(" ; ")+".\n":""}Offre : ${p?p.titre+" — "+(p.description||""):"services de géomatique : bases de données PostGIS, cartographie, applications web SIG, tableaux de bord décisionnels, télédétection"}.
+${selRefs().length?"Cite brièvement ces références : "+selRefs().map(refText).join(" ; ")+".\n":""}Offre : ${p?p.titre+" : "+(p.description||""):"services de géomatique : bases de données PostGIS, cartographie, applications web SIG, tableaux de bord décisionnels, télédétection"}.
 ${pr.pays==="Burkina Faso"?"Tiens compte des réalités burkinabè (connectivité, saison des pluies, financement bailleurs) si c'est pertinent.":""}
 Termine par une signature avec les champs [Prénom Nom] et [Téléphone].
 Réponds uniquement avec un objet JSON {"objet": string, "corps": string}.`,{cache:false});
@@ -1451,8 +1451,8 @@ function md(src){
   flushT();if(inList)out+="</ul>";return out;
 }
 function bpContext(p){const st=projStats(p);const pros=S.data.prospects.filter(x=>p.zone==="bf"?x.pays==="Burkina Faso":true).slice(0,15);
-  return `Projet : ${p.titre}\nDescription : ${p.description||"—"}\nDomaine : ${DOM[p.domaine]||"—"} · Zone : ${p.zone==="bf"?"Burkina Faso":"France / international"}\nDébut : ${p.debut||"non démarré"} · Sprints de ${p.sprintJours||14} jours\nTemps passé : ${hm(st.tot)} (estimé ${hm(st.est)}), ${st.done}/${st.ts.length} tâches terminées\nBacklog :\n${st.ts.map(t=>`- [${STAT[t.statut||"backlog"]}] S${t.sprint||"?"} ${t.titre} (${t.estimationH||0} h estimées, ${hm(t.tempsMin)} réelles)`).join("\n")}\nProspects identifiés :\n${pros.map(x=>`- ${x.nom} (${x.pays}, ${x.type}) : ${x.besoin||""}`).join("\n")}`}
-function bpTemplate(p){const st=projStats(p);return `# Business plan — ${p.titre}
+  return `Projet : ${p.titre}\nDescription : ${p.description||"-"}\nDomaine : ${DOM[p.domaine]||"-"} · Zone : ${p.zone==="bf"?"Burkina Faso":"France / international"}\nDébut : ${p.debut||"non démarré"} · Sprints de ${p.sprintJours||14} jours\nTemps passé : ${hm(st.tot)} (estimé ${hm(st.est)}), ${st.done}/${st.ts.length} tâches terminées\nBacklog :\n${st.ts.map(t=>`- [${STAT[t.statut||"backlog"]}] S${t.sprint||"?"} ${t.titre} (${t.estimationH||0} h estimées, ${hm(t.tempsMin)} réelles)`).join("\n")}\nProspects identifiés :\n${pros.map(x=>`- ${x.nom} (${x.pays}, ${x.type}) : ${x.besoin||""}`).join("\n")}`}
+function bpTemplate(p){const st=projStats(p);return `# Business plan : ${p.titre}
 
 ## 1. Résumé
 ${p.description||"Décrivez en cinq lignes le problème, la solution et la cible."}
@@ -1551,7 +1551,7 @@ document.addEventListener("click",async e=>{
     const x=byId("taches",d.startt);await patch("taches",x.id,{running:new Date().toISOString(),statut:"encours",debut:x.debut||today()});toast("Chrono lancé");return}
   if(d.stop){const x=byId("taches",d.stop);const m=(Date.now()-new Date(x.running))/60000;await patch("taches",x.id,{running:null,tempsMin:(x.tempsMin||0)+m,sessions:[...(x.sessions||[]),{debut:x.running,fin:new Date().toISOString(),min:Math.round(m)}]});toast(hm(m)+" ajoutées");return}
   if(d.genBacklog!==undefined&&P){t.disabled=true;t.textContent="Claude prépare le backlog…";
-    try{const items=await S.sample.json(`Propose le backlog Scrum d'un projet de géomatique, réparti sur 3 à 4 sprints. Projet : ${P.titre}. Description : ${P.description||"—"}. Zone : ${P.zone==="bf"?"Burkina Faso (tenir compte de la connectivité, de la saison des pluies, des sources IGB/INSD/OSM)":"France"}. Réponds uniquement avec un tableau JSON de 8 à 14 objets {"titre": string, "sprint": number, "estimationH": number, "description": string}.`,{cache:false});
+    try{const items=await S.sample.json(`Propose le backlog Scrum d'un projet de géomatique, réparti sur 3 à 4 sprints. Projet : ${P.titre}. Description : ${P.description||"-"}. Zone : ${P.zone==="bf"?"Burkina Faso (tenir compte de la connectivité, de la saison des pluies, des sources IGB/INSD/OSM)":"France"}. Réponds uniquement avec un tableau JSON de 8 à 14 objets {"titre": string, "sprint": number, "estimationH": number, "description": string}.`,{cache:false});
       if(Array.isArray(items)){for(const x of tasksFromBacklog(P,items))await put("taches",x.id,clean(x));toast(items.length+" tâches ajoutées au backlog")}}
     catch(err){toast(err.code==="not_granted"?"Proposition automatique refusée":"Proposition impossible pour le moment")}finally{t.disabled=false;t.textContent="Proposer un backlog avec Claude"}return}
   if(d.newEvent!==undefined){eventModal({});return}
@@ -1567,7 +1567,7 @@ document.addEventListener("click",async e=>{
   if(d.genBp!==undefined){genBP();return}
   if(d.bpTemplate!==undefined){const p=byId("projets",S.bpProj);if(p){await put("bp",p.id,{markdown:bpTemplate(p),date:new Date().toISOString(),projetTitre:p.titre});toast("Canevas créé")}return}
   if(d.dlBp){const p=byId("projets",S.bpProj);const b=S.data.bp.find(x=>x.id===S.bpProj);if(!b)return;const name="business-plan-"+p.titre.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,50);
-    if(d.dlBp==="md")dl(name+".md",b.markdown);else dl(name+".html",`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Business plan — ${esc(p.titre)}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#16221E}h2{color:#B24F27}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px}</style></head><body>${md(b.markdown)}</body></html>`);return}
+    if(d.dlBp==="md")dl(name+".md",b.markdown);else dl(name+".html",`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Business plan : ${esc(p.titre)}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#16221E}h2{color:#B24F27}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px}</style></head><body>${md(b.markdown)}</body></html>`);return}
   if(d.copyBp!==undefined){const b=S.data.bp.find(x=>x.id===S.bpProj);if(b)copy(b.markdown);return}
   if(d.genPrompt){const k=d.genPrompt;const st=document.getElementById("g-status-"+k);const need=val("g-need-"+k);if(!need){st.textContent="Décrivez d'abord votre besoin.";return}
     t.disabled=true;st.textContent="Rédaction…";
@@ -1760,7 +1760,7 @@ function factureHTML(f){const p=profil();const t=totals(f);
   <div><span class="muted">Client</span><br><b>${esc(f.client||"")}</b></div>${f.objet?`<p><span class="muted">Objet :</span> ${esc(f.objet)}</p>`:""}
   <table><thead><tr><th>Désignation</th><th class="n">Qté</th><th>Unité</th><th class="n">Prix unitaire</th><th class="n">Total</th></tr></thead><tbody>${(f.lignes||[]).map(l=>`<tr><td>${esc(l.libelle)}</td><td class="n">${esc(l.qte)}</td><td>${esc(l.unite||"")}</td><td class="n">${money(l.pu,f.devise)}</td><td class="n">${money((l.qte||0)*(l.pu||0),f.devise)}</td></tr>`).join("")}</tbody></table>
   <div class="tot"><div><span>Total HT</span><span>${money(t.ht,f.devise)}</span></div><div><span>TVA ${esc(f.tva)} %</span><span>${money(t.tva,f.devise)}</span></div><div class="big"><span>Total TTC</span><span>${money(t.ttc,f.devise)}</span></div></div>
-  <footer>${esc(f.mentions||"")}${f.type==="facture"?`<br>Paiement à réception, au plus tard le ${f.echeance?esc(new Date(f.echeance).toLocaleDateString("fr-FR")):"—"}. En cas de retard, pénalités au taux légal et indemnité forfaitaire de 40 € pour frais de recouvrement (clients professionnels en France).${p.iban?`<br>IBAN : ${esc(p.iban)}`:""}`:`<br>Bon pour accord : date et signature du client.`}</footer></body></html>`}
+  <footer>${esc(f.mentions||"")}${f.type==="facture"?`<br>Paiement à réception, au plus tard le ${f.echeance?esc(new Date(f.echeance).toLocaleDateString("fr-FR")):"-"}. En cas de retard, pénalités au taux légal et indemnité forfaitaire de 40 € pour frais de recouvrement (clients professionnels en France).${p.iban?`<br>IBAN : ${esc(p.iban)}`:""}`:`<br>Bon pour accord : date et signature du client.`}</footer></body></html>`}
 function profilModal(){const p=profil();
   openModal(`<header><h2>Mes coordonnées et tarif</h2><button class="btn ghost" data-close aria-label="Fermer">✕</button></header>
   <form class="form" id="pf-form"><label>Nom<input id="pf-nom" value="${esc(p.nom||"")}"></label><label>Raison sociale ou statut<input id="pf-raison" value="${esc(p.raison||"")}" placeholder="ex. Entrepreneur individuel"></label>
@@ -1805,7 +1805,7 @@ function refModal(r){
   document.querySelector("[data-copy-ref]").onclick=()=>copy(refText(d()));
   $("#rf-form").onsubmit=async e=>{e.preventDefault();await put("portfolio",r.id||uid("ref"),d());closeModal();toast("Réalisation enregistrée")};
 }
-const refText=r=>`• ${r.titre}${r.client?" — "+r.client:""} (${r.pays||""}, ${r.annee||""})${r.demo?" [démonstration]":""} : ${r.resultat||r.realisation||""}${r.lien?" "+r.lien:""}`;
+const refText=r=>`• ${r.titre}${r.client?" - "+r.client:""} (${r.pays||""}, ${r.annee||""})${r.demo?" [démonstration]":""} : ${r.resultat||r.realisation||""}${r.lien?" "+r.lien:""}`;
 
 /* ---------- Carnet de prompts ---------- */
 function usagesOf(pid){return S.data.usages.filter(u=>u.promptId===pid).sort((a,b)=>(b.date||"").localeCompare(a.date||""))}
@@ -1823,7 +1823,7 @@ function usageModal(p){
 VIEWS.carnet=function(){
   const us=[...S.data.usages].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const byP={};us.forEach(u=>{(byP[u.promptId]=byP[u.promptId]||[]).push(u)});
-  const avg=us.length?(us.reduce((s,u)=>s+(u.note||0),0)/us.length).toFixed(1).replace(".",","):"—";
+  const avg=us.length?(us.reduce((s,u)=>s+(u.note||0),0)/us.length).toFixed(1).replace(".",","):"-";
   const versions=Object.values(byP).filter(a=>a.some(u=>u.version)).length;
   return `${loadingNote()}<p class="muted">Chaque fois que vous utilisez un prompt, notez le résultat et gardez votre version améliorée. La veille du matin s'en sert pour vous proposer des prompts de plus en plus adaptés.</p>
   <div class="kpis"><div class="kpi"><span class="eyebrow">Utilisations</span><b>${us.length}</b></div><div class="kpi"><span class="eyebrow">Prompts testés</span><b>${Object.keys(byP).length}</b></div><div class="kpi"><span class="eyebrow">Note moyenne</span><b>${avg}${us.length?" / 5":""}</b></div><div class="kpi"><span class="eyebrow">Versions améliorées</span><b>${versions}</b></div></div>
@@ -2931,7 +2931,7 @@ function maybeAskAlarms(){
     if($("#modal-root").innerHTML)return;
     await put("reglages","alarmes",{...alarmes(),asked:true});
     openModal(`<header><h2>Activer les alertes ?</h2><button class="btn ghost" data-close aria-label="Fermer">✕</button></header>
-     <p class="muted">GéoPrompt Studio peut vous prévenir par un son et une notification quand la veille du matin est prête, ou juste avant un rendez-vous — tant que l'application reste ouverte. Vous pourrez changer cela à tout moment dans Mon compte.</p>
+     <p class="muted">GéoPrompt Studio peut vous prévenir par un son et une notification quand la veille du matin est prête, ou juste avant un rendez-vous, tant que l'application reste ouverte. Vous pourrez changer cela à tout moment dans Mon compte.</p>
      <div class="row"><button class="btn primary" type="button" data-al-enable>Activer les alertes</button><button class="btn ghost" type="button" data-close>Plus tard</button></div>`);
   },1200);
 }
@@ -2949,7 +2949,7 @@ VIEWS.profil=function(){
     <div class="row" style="align-items:center;gap:14px">
       ${avatar?`<img src="${esc(avatar)}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover">`:`<span style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary-soft);flex:none">${icon("user")}</span>`}
       <div style="min-width:0">
-        <b style="font-size:1.05rem">${esc(p.nom||md.full_name||md.name||"—")}</b>
+        <b style="font-size:1.05rem">${esc(p.nom||md.full_name||md.name||"-")}</b>
         <div class="status">${esc(S.userEmail||"")}</div>
         <div class="status">Connecté avec ${provider==="google"?"Google":"votre email et mot de passe"}</div>
       </div>
@@ -3000,7 +3000,7 @@ VIEWS.profil=function(){
   </section>
   <section class="card">
     <div class="sechead"><h2>À propos</h2></div>
-    <p class="muted">GéoPrompt Studio — l'atelier du géomaticien.</p>
+    <p class="muted">GéoPrompt Studio, l'atelier du géomaticien.</p>
     <p class="status">Code source : <a href="https://github.com/Hermes-bit/geoprompt-studio" target="_blank" rel="noopener">github.com/Hermes-bit/geoprompt-studio</a></p>
   </section>`;
 };
@@ -3084,7 +3084,7 @@ async function facturePDF(f){
   y+=5;doc.setFontSize(10);txt(C.ink);doc.text(T(pr.nom||""),L,y);doc.setFont("helvetica","normal");doc.setFontSize(8.5);txt([70,85,90]);
   const emet=[pr.raison,...String(pr.adresse||"").split("\n"),pr.email,pr.tel,pr.siret?("SIRET / IFU : "+pr.siret):""].filter(Boolean).map(T);
   emet.forEach((l,i)=>doc.text(l,L,y+5+i*4.2));
-  doc.setFont("helvetica","bold");doc.setFontSize(10);const cn=doc.splitTextToSize(T(f.client||"—"),R-118);const ca=String(f.clientAdresse||"").split("\n").filter(Boolean);
+  doc.setFont("helvetica","bold");doc.setFontSize(10);const cn=doc.splitTextToSize(T(f.client||"-"),R-118);const ca=String(f.clientAdresse||"").split("\n").filter(Boolean);
   fill(C.soft);doc.roundedRect(110,y-4.5,R-110,Math.max(22,7+cn.length*4.6+ca.length*4.2),2,2,"F");
   txt(C.ink);doc.text(cn,114,y+1);doc.setFont("helvetica","normal");doc.setFontSize(8.5);txt([70,85,90]);
   ca.forEach((l,i)=>doc.text(T(l),114,y+1+cn.length*4.6+i*4.2));
@@ -3104,7 +3104,7 @@ async function facturePDF(f){
   fill(C.teal);doc.roundedRect(tx-3,y,R-tx+3,10,1.5,1.5,"F");doc.setFont("helvetica","bold");doc.setFontSize(11);txt([255,255,255]);doc.text("Total TTC",tx,y+6.7);doc.text(M(t.ttc),R-2,y+6.7,{align:"right"});
   if(f.devise==="XOF"){doc.setFont("helvetica","normal");doc.setFontSize(7.5);txt(C.gray);doc.text(T("soit environ "+money(t.ttc/XOF,"EUR")),R-2,y+14,{align:"right"})}
   y+=20;doc.setFont("helvetica","normal");doc.setFontSize(8);txt([70,85,90]);
-  const cond=[f.mentions,f.type==="facture"?`Paiement au plus tard le ${f.echeance?new Date(f.echeance).toLocaleDateString("fr-FR"):"—"}. En cas de retard : pénalités au taux légal et indemnité forfaitaire de 40 € pour frais de recouvrement (clients professionnels en France).${pr.iban?" IBAN : "+pr.iban:""}`:"Devis valable "+(f.validite||30)+" jours à compter de sa date d'émission."].filter(Boolean).map(T).join("\n");
+  const cond=[f.mentions,f.type==="facture"?`Paiement au plus tard le ${f.echeance?new Date(f.echeance).toLocaleDateString("fr-FR"):"-"}. En cas de retard : pénalités au taux légal et indemnité forfaitaire de 40 € pour frais de recouvrement (clients professionnels en France).${pr.iban?" IBAN : "+pr.iban:""}`:"Devis valable "+(f.validite||30)+" jours à compter de sa date d'émission."].filter(Boolean).map(T).join("\n");
   const cl=doc.splitTextToSize(cond,R-L);if(y+cl.length*3.8+45>278){doc.addPage();header();y=50}doc.text(cl,L,y);y+=cl.length*3.8+6;
   const sy=y;doc.setFont("helvetica","bold");doc.setFontSize(7.5);txt(C.gray);doc.text("SIGNATURE DE L'ÉMETTEUR",L,sy);doc.text(f.type==="devis"?"BON POUR ACCORD DU CLIENT":"",112,sy);
   draw(C.light);doc.setLineWidth(0.3);doc.roundedRect(L,sy+2,85,34,2,2,"S");if(f.type==="devis")doc.roundedRect(110,sy+2,R-110,34,2,2,"S");

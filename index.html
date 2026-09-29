@@ -327,6 +327,8 @@ pre.prompt{white-space:pre-wrap;font-family:var(--f-mono);font-size:.8rem;backgr
 .alarm-banner b{display:block;margin-bottom:2px;font-size:.95rem}
 .alarm-banner span{font-size:.85rem;opacity:.9}
 .alarm-banner button{flex:none;background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:700;font-size:.8rem}
+.alarm-banner-urgent{background:var(--crit);animation:up .3s ease,pulseAlarm 1s ease-in-out infinite}
+@keyframes pulseAlarm{0%,100%{box-shadow:var(--shadow-lg)}50%{box-shadow:0 0 0 10px rgba(179,38,30,.28),var(--shadow-lg)}}
 @media (min-width:900px){.toast{bottom:28px}}
 .stars button{background:none;border:0;cursor:pointer;font-size:1.3rem;color:var(--line);padding:0 2px}
 .stars button.on{color:var(--accent)}
@@ -1587,6 +1589,7 @@ document.addEventListener("change",async e=>{const d=e.target.dataset||{};
     if(d.al==="actif"){a.actif=e.target.checked;if(a.actif&&notifStatus()==="default")await Notification.requestPermission()}
     else if(d.al==="veille")a.veille=e.target.checked;
     else if(d.al==="minutesAvant")a.minutesAvant=Number(e.target.value);
+    else if(d.al==="mode")a.mode=e.target.value;
     await put("reglages","alarmes",a);render();return}
 });
 window.addEventListener("resize",()=>{if(S.tab==="agenda")scheduleRender()});
@@ -2894,18 +2897,23 @@ function notifStatus(){return (typeof Notification!=="undefined")?Notification.p
 function notifLabel(){return {granted:"autorisées",denied:"refusées dans le navigateur",default:"pas encore demandées",unsupported:"non disponibles sur ce navigateur"}[notifStatus()]}
 function alreadyAlerted(key){try{return localStorage.getItem("gm-alert-"+key)==="1"}catch(e){return false}}
 function markAlerted(key){try{localStorage.setItem("gm-alert-"+key,"1")}catch(e){}}
-function alarmSound(){try{const ctx=new (window.AudioContext||window.webkitAudioContext)();
-  const beep=t=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=880;o.connect(g);g.connect(ctx.destination);
-    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(.25,ctx.currentTime+t+.02);g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+.28);
+function alarmSound(mode){try{const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const beep=(t,f)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=f;o.connect(g);g.connect(ctx.destination);
+    g.gain.setValueAtTime(0,ctx.currentTime+t);g.gain.linearRampToValueAtTime(.28,ctx.currentTime+t+.02);g.gain.linearRampToValueAtTime(0,ctx.currentTime+t+.28);
     o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.3)};
-  beep(0);beep(.35);setTimeout(()=>ctx.close(),1200)}catch(e){}}
+  if(mode==="alarme"){for(let i=0;i<6;i++){beep(i*.5,980);beep(i*.5+.25,760)}setTimeout(()=>ctx.close(),3500);
+    if(navigator.vibrate)navigator.vibrate([250,120,250,120,250,120,250])}
+  else{beep(0,880);beep(.35,880);setTimeout(()=>ctx.close(),1200)}
+  }catch(e){}}
 function fireAlarm(title,body){
-  alarmSound();
-  if(notifStatus()==="granted"){try{new Notification(title,{body,icon:"icons/icon-192.png",tag:title})}catch(e){}}
-  const el=document.createElement("div");el.className="alarm-banner";
+  const mode=alarmes().mode==="alarme"?"alarme":"notif";
+  alarmSound(mode);
+  if(notifStatus()==="granted"){try{new Notification(title,{body,icon:"icons/icon-192.png",tag:title,requireInteraction:mode==="alarme"})}catch(e){}}
+  const el=document.createElement("div");el.className="alarm-banner"+(mode==="alarme"?" alarm-banner-urgent":"");
   el.innerHTML=`<span style="flex:1;min-width:0"><b>${esc(title)}</b>${esc(body)}</span><button type="button">Fermer</button>`;
   el.querySelector("button").onclick=()=>el.remove();
-  document.body.appendChild(el);setTimeout(()=>el.remove(),12000);
+  document.body.appendChild(el);
+  if(mode!=="alarme")setTimeout(()=>el.remove(),12000);
 }
 function checkAlarms(){
   const a=alarmes();if(!a.actif||!S.loaded||!USER)return;
@@ -2968,6 +2976,12 @@ VIEWS.profil=function(){
     </div>
     <div class="li"><div class="body"><b>Rendez-vous</b><div class="status">Vous prévenir avant un événement d'agenda</div></div>
       <select data-al="minutesAvant" aria-label="Délai avant le rendez-vous">${[5,15,30,60].map(m=>`<option value="${m}" ${Number(alm.minutesAvant||15)===m?"selected":""}>${m} min avant</option>`).join("")}</select>
+    </div>
+    <div class="li"><div class="body"><b>Type d'alerte</b><div class="status">Notification discrète, ou alarme insistante avec son répété et vibration</div></div>
+      <select data-al="mode" aria-label="Type d'alerte">
+        <option value="notif" ${alm.mode!=="alarme"?"selected":""}>Notification</option>
+        <option value="alarme" ${alm.mode==="alarme"?"selected":""}>Alarme</option>
+      </select>
     </div>
     ${notifStatus()==="denied"?`<p class="status" style="margin-top:10px">Les notifications ont été refusées dans votre navigateur : l'alerte sonore et visuelle dans l'application fonctionne quand même, mais pas la notification système. Pour les réautoriser, changez ce réglage dans les paramètres du navigateur.</p>`:""}
   </section>
